@@ -13,6 +13,7 @@ class userStatus(StrEnum):
     Banned = 'banned'
     Disabled = 'disabled'
 
+
 class PostgresDB:
 
     hasher = PasswordHasher()
@@ -94,7 +95,7 @@ class PostgresDB:
             list[asyncpg.Record]: users with the nickname
         """
         return await self.fetchUserByNickname.fetch(nickname)
-    
+
     async def searchUserByEmail(self, email: str) -> list[asyncpg.Record]:
         """### Get All Users with the email
 
@@ -135,17 +136,44 @@ class PostgresDB:
             return str(error)
         if await self.searchUserByEmail(email):
             return 'Email already exist. '
-        
+
         password_hash = self.hasher.hash(password) if password else 'null'
         await self.db.execute('''
             INSERT INTO users(username, display_name, email, password_hash, status) VALUES ($1, $2, $3, $4, $5)
         ''', username, display_name, email, password_hash, status)
 
+    async def modifyUser(self, uid: int, *, email: str = None, password: str = None, status: userStatus = None) -> Optional[str]:
+        if not await self.searchUserByUid(uid):
+            return 'Invalid UID! '
+        if (not email) and (not password) and (not status):
+            return 'No Info Provided! '
+
+        if email:
+            try:
+                email = validate_email(email).normalized
+            except EmailNotValidError as error:
+                return str(error)
+            if await self.searchUserByEmail(email):
+                return 'Email already exist. '
+
+            await self.db.execute('''
+                UPDATE users SET email = $1 WHERE uid = $2
+            ''', email, uid)
+        if password:
+            password_hash = self.hasher.hash(password)
+            await self.db.execute('''
+                UPDATE users SET password = $1 WHERE uid = $2
+            ''', password_hash, uid)
+        if status:
+            await self.db.execute('''
+                UPDATE users SET status = $1 WHERE uid = $2
+            ''', status, uid)
+
     async def createGame(self, name: str, display_name: str):
         await self.db.execute(f'''
             CREATE TABLE IF NOT EXISTS game_{name} (
-                uid SERIAL PRIMARY KEY, 
-                user_uid SERIAL, 
+                uid SERIAL PRIMARY KEY,
+                user_uid SERIAL,
                 replay_json json
             )
         ''')
@@ -156,7 +184,7 @@ class PostgresDB:
     async def submitScore(self, gameName: str, userUID: int, replayJson: str):
         if not await self.searchUserByUid(userUID):
             return 'Invalid UID! '
-        
+
         try:
             await self.db.execute(f'''
                 INSERT INTO game_{gameName}(user_uid, replay_json) VALUES ($1, $2)
