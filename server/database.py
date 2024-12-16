@@ -32,23 +32,27 @@ class PostgresDB:
     async def __init__(self, **connection_info):
         self.db: asyncpg.Connection = await asyncpg.connect(**connection_info)
         try:
-            self.fetchUserByUid: asyncpg.prepared_stmt.PreparedStatement = await self.db.prepare('SELECT * FROM users WHERE uid = $1')
-            self.fetchUserByUsername: asyncpg.prepared_stmt.PreparedStatement = await self.db.prepare('SELECT * FROM users WHERE username = $1')
-            self.fetchUserByNickname: asyncpg.prepared_stmt.PreparedStatement = await self.db.prepare('SELECT * FROM users WHERE display_name = $1')
-            self.fetchUserByEmail: asyncpg.prepared_stmt.PreparedStatement = await self.db.prepare('SELECT * FROM users WHERE lower(email) = LOWER($1)')
-            self.fetchGames: asyncpg.prepared_stmt.PreparedStatement = await self.db.prepare('SELECT * FROM games')
-            self.fetchScoreByGame: dict[str, asyncpg.prepared_stmt.PreparedStatement] = {}
-            self.fetchScoreLeaderboard: dict[str, asyncpg.prepared_stmt.PreparedStatement] = {}
-            for game in await self.fetchGames.fetch():
-                self.fetchScoreByGame[game['name']] = await self.db.prepare(f'SELECT * FROM game_{game['name']} WHERE uid = $1')
-                self.fetchScoreByGame[f"{game['name']}_json"] = await self.db.prepare(f'SELECT * FROM game_{game['name']} WHERE replay_json::jsonb @> $1::jsonb AND replay_json::jsonb <@ $1::jsonb')
-                self.fetchScoreLeaderboard[game['name']] = await self.db.prepare(f'''
-                    SELECT * FROM game_{game['name']}
-                    WHERE CAST(replay_json -> 'info' ->> 'level_id' AS INTEGER) = $1
-                    ORDER BY (replay_json -> 'info' ->> 'time')::integer ASC LIMIT 50
-                ''')
+            await self.initSearchQuery()
         except asyncpg.exceptions.UndefinedTableError:
             await self.initTables()
+            await self.initSearchQuery()
+
+    async def initSearchQuery(self):
+        self.fetchUserByUid: asyncpg.prepared_stmt.PreparedStatement = await self.db.prepare('SELECT * FROM users WHERE uid = $1')
+        self.fetchUserByUsername: asyncpg.prepared_stmt.PreparedStatement = await self.db.prepare('SELECT * FROM users WHERE username = $1')
+        self.fetchUserByNickname: asyncpg.prepared_stmt.PreparedStatement = await self.db.prepare('SELECT * FROM users WHERE display_name = $1')
+        self.fetchUserByEmail: asyncpg.prepared_stmt.PreparedStatement = await self.db.prepare('SELECT * FROM users WHERE lower(email) = LOWER($1)')
+        self.fetchGames: asyncpg.prepared_stmt.PreparedStatement = await self.db.prepare('SELECT * FROM games')
+        self.fetchScoreByGame: dict[str, asyncpg.prepared_stmt.PreparedStatement] = {}
+        self.fetchScoreLeaderboard: dict[str, asyncpg.prepared_stmt.PreparedStatement] = {}
+        for game in await self.fetchGames.fetch():
+            self.fetchScoreByGame[game['name']] = await self.db.prepare(f'SELECT * FROM game_{game['name']} WHERE uid = $1')
+            self.fetchScoreByGame[f"{game['name']}_json"] = await self.db.prepare(f'SELECT * FROM game_{game['name']} WHERE replay_json::jsonb @> $1::jsonb AND replay_json::jsonb <@ $1::jsonb')
+            self.fetchScoreLeaderboard[game['name']] = await self.db.prepare(f'''
+                SELECT * FROM game_{game['name']}
+                WHERE CAST(replay_json -> 'info' ->> 'level_id' AS INTEGER) = $1
+                ORDER BY (replay_json -> 'info' ->> 'time')::integer ASC LIMIT 50
+            ''')
 
     async def initTables(self):
         """### Create Type user_status and Table users and games
