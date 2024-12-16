@@ -8,6 +8,8 @@ from argon2 import PasswordHasher
 from argon2 import exceptions as argon2Excepts
 from email_validator import EmailNotValidError, validate_email
 
+import replay
+
 JSON: TypeAlias = dict[str, "JSON"] | list["JSON"] | str | int | float | bool | None
 
 class userStatus(StrEnum):
@@ -53,21 +55,21 @@ class PostgresDB:
         # Create users table
         await self.db.execute('''
             CREATE TABLE IF NOT EXISTS users (
-                uid SERIAL PRIMARY KEY, 
-                username text,
-                email text,
-                display_name text,
-                password_hash text, 
-                status user_status
+                uid SERIAL NOT NULL PRIMARY KEY, 
+                username text NOT NULL,
+                email text NOT NULL,
+                display_name text NOT NULL,
+                password_hash text NOT NULL, 
+                status user_status NOT NULL
             )
         ''')
 
         # Create games table
         await self.db.execute('''
             CREATE TABLE IF NOT EXISTS games (
-                uid SERIAL PRIMARY KEY, 
-                name text,
-                display_name text
+                uid SERIAL NOT NULL PRIMARY KEY, 
+                name text NOT NULL,
+                display_name text NOT NULL
             )
         ''')
 
@@ -248,9 +250,9 @@ class PostgresDB:
     async def createGame(self, name: str, display_name: str):
         await self.db.execute(f'''
             CREATE TABLE IF NOT EXISTS game_{name} (
-                uid SERIAL PRIMARY KEY,
-                user_uid SERIAL,
-                replay_json json
+                uid SERIAL NOT NULL PRIMARY KEY,
+                user_uid SERIAL NOT NULL,
+                replay_json json NOT NULL
             )
         ''')
         await self.db.execute('''
@@ -259,6 +261,11 @@ class PostgresDB:
         self.fetchScoreByGame[name] = self.db.prepare(f'SELECT * FROM game_{name} WHERE uid = $1')
 
     async def submitScore(self, gameName: str, userUID: int, replayJson: JSON) -> JSON:
+        if not replay.validateReplayJson(replayJson):
+            return {
+                "status": 400, 
+                "message": "Invalid Replay File! "
+            }
         if not await self.searchUserByUid(userUID):
             return {
                 "status": 400, 
