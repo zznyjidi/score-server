@@ -24,31 +24,33 @@ async def userNew(request: web.Request) -> web.Response:
     database = await initDBifNotAlready()
     params = await request.post()
     status = await database.createUser(params.get('username'), params.get('nickname'), params.get('email'))
-    if status:
-        return web.Response(status=400, text=status)
-    else:
-        return web.Response(text='Success')
+    return web.Response(status=status['status'], text=json.dumps(status))
 
 @routes.post('/client/{game}/score/submit')
 async def scoreSubmit(request: web.Request) -> web.Response:
     database = await initDBifNotAlready()
     if not request.can_read_body:
-        return web.Response(status=400, text='No Request Body! ')
-
-    body = await request.json()
-    replay = json.dumps(body, indent=-1)
-    replay = replay.replace('\r', '').replace('\n', '')
-    
-    status = await database.submitScore(request.match_info['game'], int(request.rel_url.query['uid']), replay)
-    if status:
-        return web.Response(status=400, text=status)
+        status = {
+            "status": 400, 
+            "message": "No Replay File! "
+        }
     else:
-        return web.Response(text='Success')
+        try:
+            replay = await request.json()
+            status = await database.submitScore(request.match_info['game'], int(request.rel_url.query['uid']), replay)
+        except json.decoder.JSONDecodeError:
+            status = {
+                "status": 415, 
+                "message": "Replay file must be in json format! "
+            }
+    return web.Response(status=status["status"], text=json.dumps(status))
 
 @routes.get('/client/{game}/score/get')
 async def scoreGet(request: web.Request) -> web.Response:
     database = await initDBifNotAlready()
-    return web.Response(text=f'{request.rel_url.query['id']}')
+    result = await database.fetchScore(request.match_info['game'], int(request.rel_url.query['uid']))
+    http_code = result.get('status', 200)
+    return web.Response(status=http_code, text=json.dumps(result))
 
 @routes.get('/client/{game}/score/leaderboard')
 async def scoreLeaderBoard(request: web.Request) -> web.Response:
