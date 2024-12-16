@@ -29,8 +29,8 @@ class PostgresDB:
         await instance.__init__(*a, **kw)
         return instance
 
-    async def __init__(self, db_url: str):
-        self.db: asyncpg.Connection = await asyncpg.connect(db_url)
+    async def __init__(self, **connection_info):
+        self.db: asyncpg.Connection = await asyncpg.connect(**connection_info)
         try:
             self.fetchUserByUid: asyncpg.prepared_stmt.PreparedStatement = await self.db.prepare('SELECT * FROM users WHERE uid = $1')
             self.fetchUserByUsername: asyncpg.prepared_stmt.PreparedStatement = await self.db.prepare('SELECT * FROM users WHERE username = $1')
