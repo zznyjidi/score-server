@@ -1,5 +1,5 @@
-import asyncio
 import json
+import os
 from typing import Optional
 
 from aiohttp import web
@@ -12,7 +12,13 @@ routes = web.RouteTableDef()
 async def initDBifNotAlready():
     global database
     if not database:
-        database = await PostgresDB("postgres://score-server:password@127.0.0.1:5432/scores")
+        database = await PostgresDB(
+            host=os.getenv("POSTGRES_HOST", "db"), 
+            port=os.getenv("POSTGRES_PORT", 5432), 
+            user=os.getenv("POSTGRES_USER", "postgres"),
+            password=os.getenv("POSTGRES_PASS", None), 
+            database=os.getenv("POSTGRES_DB", "scores")
+        )
     return database
 
 @routes.get('/')
