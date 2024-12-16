@@ -48,14 +48,28 @@ async def scoreSubmit(request: web.Request) -> web.Response:
 @routes.get('/client/{game}/score/get')
 async def scoreGet(request: web.Request) -> web.Response:
     database = await initDBifNotAlready()
-    result = await database.fetchScore(request.match_info['game'], int(request.rel_url.query['uid']))
+    try:
+        result = await database.fetchScore(request.match_info['game'], int(request.rel_url.query['uid']))
+    except ValueError:
+        result = {
+            "status": 400, 
+            "message": "Invalid Replay UID! "
+        }
     http_code = result.get('status', 200)
     return web.Response(status=http_code, text=json.dumps(result))
 
 @routes.get('/client/{game}/score/leaderboard')
 async def scoreLeaderBoard(request: web.Request) -> web.Response:
     database = await initDBifNotAlready()
-    return web.Response()
+    try:
+        result = await database.fetchLeaderBoard(request.match_info['game'], int(request.rel_url.query['level']))
+    except ValueError:
+        result = {
+            "status": 400, 
+            "message": "Invalid Level ID! "
+        }
+    http_code = 200 if isinstance(result, list) else result.get("status", 200)
+    return web.Response(status=http_code, text=json.dumps(result))
 
 app = web.Application()
 app.add_routes(routes)

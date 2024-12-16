@@ -38,9 +38,15 @@ class PostgresDB:
             self.fetchUserByEmail: asyncpg.prepared_stmt.PreparedStatement = await self.db.prepare('SELECT * FROM users WHERE lower(email) = LOWER($1)')
             self.fetchGames: asyncpg.prepared_stmt.PreparedStatement = await self.db.prepare('SELECT * FROM games')
             self.fetchScoreByGame: dict[str, asyncpg.prepared_stmt.PreparedStatement] = {}
+            self.fetchScoreLeaderboard: dict[str, asyncpg.prepared_stmt.PreparedStatement] = {}
             for game in await self.fetchGames.fetch():
                 self.fetchScoreByGame[game['name']] = await self.db.prepare(f'SELECT * FROM game_{game['name']} WHERE uid = $1')
                 self.fetchScoreByGame[f"{game['name']}_json"] = await self.db.prepare(f'SELECT * FROM game_{game['name']} WHERE replay_json::jsonb @> $1::jsonb AND replay_json::jsonb <@ $1::jsonb')
+                self.fetchScoreLeaderboard[game['name']] = await self.db.prepare(f'''
+                    SELECT * FROM game_{game['name']}
+                    WHERE CAST(replay_json -> 'info' ->> 'level_id' AS INTEGER) = $1
+                    ORDER BY (replay_json -> 'info' ->> 'time')::integer ASC LIMIT 50
+                ''')
         except asyncpg.exceptions.UndefinedTableError:
             await self.initTables()
 
@@ -259,6 +265,12 @@ class PostgresDB:
             INSERT INTO games(name, display_name) VALUES ($1, $2)
         ''', name, display_name)
         self.fetchScoreByGame[name] = self.db.prepare(f'SELECT * FROM game_{name} WHERE uid = $1')
+        self.fetchScoreByGame[f"{name}_json"] = await self.db.prepare(f'SELECT * FROM game_{name} WHERE replay_json::jsonb @> $1::jsonb AND replay_json::jsonb <@ $1::jsonb')
+        self.fetchScoreLeaderboard[name] = await self.db.prepare(f'''
+            SELECT * FROM game_{name}
+            WHERE CAST(replay_json -> 'info' ->> 'level_id' AS INTEGER) = $1
+            ORDER BY (replay_json -> 'info' ->> 'time')::integer ASC LIMIT 50
+        ''')
 
     async def submitScore(self, gameName: str, userUID: int, replayJson: JSON) -> JSON:
         if not replay.validateReplayJson(replayJson):
@@ -288,7 +300,7 @@ class PostgresDB:
                 "message": "Success, Score Submitted. ", 
                 "replay_uid": (await self.fetchScoreByGame[f"{gameName}_json"].fetch(replayJson))[0]['uid']
             }
-        except asyncpg.exceptions.UndefinedTableError:
+        except (asyncpg.exceptions.UndefinedTableError, KeyError):
             return {
                 "status": 400, 
                 "message": "Invalid Game! "
@@ -306,4 +318,14 @@ class PostgresDB:
             return {
                 "status": 400, 
                 "message": "Invalid Replay UID! "
+            }
+
+    async def fetchLeaderBoard(self, gameName: str, level: int) -> JSON:
+        try:
+            leaderboard: list[asyncpg.Record] = await self.fetchScoreLeaderboard[gameName].fetch(level)
+            return [json.loads(replay["replay_json"]) for replay in leaderboard]
+        except KeyError:
+            return {
+                "status": 400, 
+                "message": "Invalid Game! "
             }
