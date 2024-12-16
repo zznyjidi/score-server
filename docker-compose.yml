@@ -18,3 +18,8 @@ services:
       - POSTGRES_USER=score-server
       - POSTGRES_PASSWORD=score-server
       - POSTGRES_DB=scores
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+volumes:
+  db_data:
