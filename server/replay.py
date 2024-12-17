@@ -5,7 +5,7 @@ JSON: TypeAlias = dict[str, "JSON"] | list["JSON"] | str | int | float | bool | 
 
 def validateReplayJson(replayFile: JSON) -> bool:
     return all([
-        validateReplayBlock(replayFile, "player", ["uid", "username"]), 
+        validateReplayBlock(replayFile, "player", ["uid", "nickname"]), 
         validateReplayBlock(replayFile, "info", ["level_id", "score", "time"]), 
         "replay" in replayFile
     ])
