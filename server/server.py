@@ -13,10 +13,10 @@ async def initDBifNotAlready():
     global database
     if not database:
         database = await PostgresDB(
-            host=os.getenv("POSTGRES_HOST", "db"), 
+            host=os.getenv("POSTGRES_HOST", "127.0.0.1"), 
             port=os.getenv("POSTGRES_PORT", 5432), 
-            user=os.getenv("POSTGRES_USER", "postgres"),
-            password=os.getenv("POSTGRES_PASS", None), 
+            user=os.getenv("POSTGRES_USER", "score-server"),
+            password=os.getenv("POSTGRES_PASS", "password"), 
             database=os.getenv("POSTGRES_DB", "scores")
         )
     return database
@@ -56,7 +56,7 @@ async def clientLogin(request: web.Request) -> web.Response:
                 }
             case _:
                 assert False
-    return web.Response(status=status["status"], text=status)
+    return web.Response(status=status["status"], text=json.dumps(status))
 
 @routes.post('/client/{game}/score/submit')
 async def scoreSubmit(request: web.Request) -> web.Response:
