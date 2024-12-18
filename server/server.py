@@ -32,6 +32,32 @@ async def userNew(request: web.Request) -> web.Response:
     status = await database.createUser(params.get('username'), params.get('nickname'), params.get('email'))
     return web.Response(status=status['status'], text=json.dumps(status))
 
+@routes.post('/auth/client/login')
+async def clientLogin(request: web.Request) -> web.Response:
+    database = await initDBifNotAlready()
+    params = await request.post()
+    if (uid := await database.authenticateUser(params.get('username'), params.get('password'))) > 0:
+        status = {
+            "status": 200, 
+            "message": "Success. User Verified. ",
+            "uid": uid
+        }
+    else:
+        match uid:
+            case -1:
+                status = {
+                    "status": 403, 
+                    "message": "Invalid Username or Password! "
+                }
+            case -2:
+                status = {
+                    "status": 401, 
+                    "message": "Password not set! "
+                }
+            case _:
+                assert False
+    return web.Response(status=status["status"], text=status)
+
 @routes.post('/client/{game}/score/submit')
 async def scoreSubmit(request: web.Request) -> web.Response:
     database = await initDBifNotAlready()
