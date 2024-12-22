@@ -266,7 +266,7 @@ class PostgresDB:
         await self.db.execute('''
             INSERT INTO games(name, display_name) VALUES ($1, $2)
         ''', name, display_name)
-        self.fetchScoreByGame[name] = self.db.prepare(f'SELECT * FROM game_{name} WHERE uid = $1')
+        self.fetchScoreByGame[name] = await self.db.prepare(f'SELECT * FROM game_{name} WHERE uid = $1')
         self.fetchScoreByGame[f"{name}_json"] = await self.db.prepare(f'SELECT * FROM game_{name} WHERE replay_json::jsonb @> $1::jsonb AND replay_json::jsonb <@ $1::jsonb')
         self.fetchScoreLeaderboard[name] = await self.db.prepare(f'''
             SELECT * FROM game_{name}
