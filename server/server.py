@@ -54,7 +54,7 @@ async def clientLogin(request: web.Request) -> web.Response:
             case -2:
                 status = {
                     "status": 401, 
-                    "message": "Password not set! "
+                    "message": "User not active or password not set! "
                 }
             case _:
                 assert False
