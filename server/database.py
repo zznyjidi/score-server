@@ -238,12 +238,14 @@ class PostgresDB:
 
         Returns:
             int: user's uid if positive 
-            (-1: invalid login info, -2: user password not set)
+            (-1: invalid login info, -2: user password not set or account disabled)
         """
         if user_entry := (await self.searchUserByUsername(username)):
             user_entry = user_entry[0]
         else:
             return -1, ""
+        if user_entry["status"] != userStatus.Active:
+            return -2, ""
         password_hash: str = user_entry['password_hash']
         try:
             self.hasher.verify(password_hash, password)
