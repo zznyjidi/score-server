@@ -1,6 +1,6 @@
 import json
 from enum import StrEnum
-from typing import Optional, TypeAlias
+from typing import TypeAlias
 
 import asyncpg
 import asyncpg.prepared_stmt
