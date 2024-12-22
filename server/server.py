@@ -36,11 +36,13 @@ async def userNew(request: web.Request) -> web.Response:
 async def clientLogin(request: web.Request) -> web.Response:
     database = await initDBifNotAlready()
     params = await request.post()
-    if (uid := await database.authenticateUser(params.get('username'), params.get('password'))) > 0:
+    uid, nickname = await database.authenticateUser(params.get('username'), params.get('password'))
+    if (uid) > 0:
         status = {
             "status": 200, 
             "message": "Success. User Verified. ",
-            "uid": uid
+            "uid": uid, 
+            "nickname": nickname
         }
     else:
         match uid:

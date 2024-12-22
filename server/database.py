@@ -229,7 +229,7 @@ class PostgresDB:
             "message": "Success, User Updated. "
         }
 
-    async def authenticateUser(self, username: str, password: str) -> int:
+    async def authenticateUser(self, username: str, password: str) -> tuple[int, str]:
         """### Get User UID from it's username and password
 
         Args:
@@ -243,17 +243,17 @@ class PostgresDB:
         if user_entry := (await self.searchUserByUsername(username)):
             user_entry = user_entry[0]
         else:
-            return -1
+            return -1, ""
         password_hash: str = user_entry['password_hash']
         try:
             self.hasher.verify(password_hash, password)
             if self.hasher.check_needs_rehash:
                 await self.modifyUser(user_entry['uid'], password=password)
-            return user_entry['uid']
+            return user_entry['uid'], user_entry['display_name']
         except argon2Excepts.VerifyMismatchError:
-            return -1
+            return -1, ""
         except argon2Excepts.InvalidHashError:
-            return -2
+            return -2, ""
 
     async def createGame(self, name: str, display_name: str):
         await self.db.execute(f'''
