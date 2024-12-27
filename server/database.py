@@ -1,16 +1,18 @@
 import json
+import os
 from enum import StrEnum
 from typing import TypeAlias
 
 import asyncpg
 import asyncpg.prepared_stmt
+import replay
 from argon2 import PasswordHasher
 from argon2 import exceptions as argon2Excepts
 from email_validator import EmailNotValidError, validate_email
 
-import replay
-
 JSON: TypeAlias = dict[str, "JSON"] | list["JSON"] | str | int | float | bool | None
+defaultGame = os.getenv('SCORE_DEFAULT_GAME', 'default_game')
+defaultGameName = os.getenv('SCORE_DEFAULT_GAME_NAME', 'Default Game')
 
 class userStatus(StrEnum):
     Active = 'active'
@@ -35,6 +37,7 @@ class PostgresDB:
             await self.initSearchQuery()
         except asyncpg.exceptions.UndefinedTableError:
             await self.initTables()
+            await self.createGame(defaultGame, defaultGameName)
             await self.initSearchQuery()
 
     async def initSearchQuery(self):

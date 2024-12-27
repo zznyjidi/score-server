@@ -8,6 +8,8 @@ services:
       - POSTGRES_USER=score-server
       - POSTGRES_PASS=score-server
       - POSTGRES_DB=scores
+      - SCORE_DEFAULT_GAME=default_game
+      - SCORE_DEFAULT_GAME_NAME=Default Game
     ports:
       - 8080:8080
   db:
