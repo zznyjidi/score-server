@@ -1,7 +1,7 @@
 import json
 import os
 from enum import StrEnum
-from typing import TypeAlias
+from typing import Optional, TypeAlias
 
 import asyncpg
 import asyncpg.prepared_stmt
@@ -130,7 +130,7 @@ class PostgresDB:
         """
         return await self.fetchUserByEmail.fetch(email)
 
-    async def createUser(self, username: str, display_name: str, email: str, *, password: str = None, status: userStatus = 'unverified') -> JSON:
+    async def createUser(self, username: str, display_name: str, email: str, *, password: Optional[str] = None, status: userStatus = userStatus('unverified')) -> JSON:
         """### Create User in db
 
         Args:
@@ -190,7 +190,7 @@ class PostgresDB:
             "message": "Success, User Created. "
         }
 
-    async def modifyUser(self, uid: int, *, email: str = None, password: str = None, status: userStatus = None) -> JSON:
+    async def modifyUser(self, uid: int, *, email: Optional[str] = None, password: Optional[str] = None, status: Optional[userStatus] = None) -> JSON:
         if not await self.searchUserByUid(uid):
             return {
                 "status": 400, 
