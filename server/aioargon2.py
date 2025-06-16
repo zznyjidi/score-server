@@ -1,6 +1,7 @@
 import asyncio
 import concurrent.futures
 from typing import Literal
+
 from argon2 import PasswordHasher
 
 HasherProcessPool = concurrent.futures.ProcessPoolExecutor()

@@ -3,10 +3,10 @@ import os
 from enum import StrEnum
 from typing import Optional, TypeAlias
 
+import aioargon2
 import asyncpg
 import asyncpg.prepared_stmt
 import replay
-from argon2 import PasswordHasher
 from argon2 import exceptions as argon2Excepts
 from email_validator import EmailNotValidError, validate_email
 
@@ -22,8 +22,6 @@ class userStatus(StrEnum):
 
 
 class PostgresDB:
-
-    hasher = PasswordHasher()
 
     # For async init
     async def __new__(cls, *a, **kw):
@@ -181,7 +179,7 @@ class PostgresDB:
                 "message": "Email already exist. "
             }
 
-        password_hash = self.hasher.hash(password) if password else 'null'
+        password_hash = await aioargon2.hash(password) if password else 'null'
         await self.db.execute('''
             INSERT INTO users(username, display_name, email, password_hash, status) VALUES ($1, $2, $3, $4, $5)
         ''', username, display_name, email, password_hash, status)
@@ -219,7 +217,7 @@ class PostgresDB:
                 UPDATE users SET email = $1 WHERE uid = $2
             ''', email, uid)
         if password:
-            password_hash = self.hasher.hash(password)
+            password_hash = await aioargon2.hash(password)
             await self.db.execute('''
                 UPDATE users SET password_hash = $1 WHERE uid = $2
             ''', password_hash, uid)
@@ -251,8 +249,8 @@ class PostgresDB:
             return -2, ""
         password_hash: str = user_entry['password_hash']
         try:
-            self.hasher.verify(password_hash, password)
-            if self.hasher.check_needs_rehash(password_hash):
+            await aioargon2.verify(password_hash, password)
+            if await aioargon2.check_needs_rehash(password_hash):
                 await self.modifyUser(user_entry['uid'], password=password)
             return user_entry['uid'], user_entry['display_name']
         except argon2Excepts.VerifyMismatchError:
