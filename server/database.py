@@ -252,7 +252,7 @@ class PostgresDB:
         password_hash: str = user_entry['password_hash']
         try:
             self.hasher.verify(password_hash, password)
-            if self.hasher.check_needs_rehash:
+            if self.hasher.check_needs_rehash(password_hash):
                 await self.modifyUser(user_entry['uid'], password=password)
             return user_entry['uid'], user_entry['display_name']
         except argon2Excepts.VerifyMismatchError:
