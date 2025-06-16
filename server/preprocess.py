@@ -33,9 +33,9 @@ async def extract_params(
 
     Args:
         request (web.Request): request object
-        query_param (Optional[list[str]], optional): list of query parameters to parse. Defaults to None.
-        body_param (Optional[list[str]], optional): list of parameters extracts from the json body. Defaults to None.
-        url_match (Optional[list[str]], optional): list of parameters from the url variables. Defaults to None.
+        query_param (list[str], optional): list of query parameters to parse. Defaults to None.
+        body_param (list[str], optional): list of parameters extracts from the json body. Defaults to None.
+        url_match (list[str], optional): list of parameters from the url variables. Defaults to None.
 
     Raises:
         web.HTTPBadRequest: when requested parameter is not found
@@ -49,10 +49,10 @@ async def extract_params(
     if query_param:
         rel_url = request.rel_url
         for param in query_param:
-            if value := rel_url.query[param]:
-                params[param] = value
-            else:
-                raise web.HTTPBadRequest()
+            try:
+                params[param] = rel_url.query[param]
+            except KeyError as e:
+                raise web.HTTPBadRequest() from e
 
     if body_param:
         try:
