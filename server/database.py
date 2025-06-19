@@ -128,7 +128,7 @@ class PostgresDB:
         """
         return await self.fetchUserByEmail.fetch(email)
 
-    async def createUser(self, username: str, display_name: str, email: str, *, password: Optional[str] = None, status: userStatus = userStatus('unverified')) -> JSON:
+    async def createUser(self, username: str, display_name: str, email: str, *, password: Optional[str] = None, status: userStatus = userStatus('unverified')) -> dict[str, JSON]:
         """### Create User in db
 
         Args:
@@ -188,7 +188,7 @@ class PostgresDB:
             "message": "Success, User Created. "
         }
 
-    async def modifyUser(self, uid: int, *, email: Optional[str] = None, password: Optional[str] = None, status: Optional[userStatus] = None) -> JSON:
+    async def modifyUser(self, uid: int, *, email: Optional[str] = None, password: Optional[str] = None, status: Optional[userStatus] = None) -> dict[str, JSON]:
         if not await self.searchUserByUid(uid):
             return {
                 "status": 400, 
@@ -277,7 +277,7 @@ class PostgresDB:
             ORDER BY (replay_json -> 'info' ->> 'time')::integer ASC LIMIT 50
         ''')
 
-    async def submitScore(self, gameName: str, userUID: int, replayJson: JSON) -> JSON:
+    async def submitScore(self, gameName: str, userUID: int, replayJson: JSON) -> dict[str, JSON]:
         if not replay.validateReplayJson(replayJson):
             return {
                 "status": 400, 
@@ -316,7 +316,7 @@ class PostgresDB:
                 "message": "Replay file must be in json format! "
             }
 
-    async def fetchScore(self, gameName: str, replayUid: int) -> JSON:
+    async def fetchScore(self, gameName: str, replayUid: int) -> dict[str, JSON]:
         if result := await self.fetchScoreByGame[gameName].fetch(replayUid):
             return json.loads(result[0]['replay_json'])
         else:
@@ -325,7 +325,7 @@ class PostgresDB:
                 "message": "Invalid Replay UID! "
             }
 
-    async def fetchLeaderBoard(self, gameName: str, level: int) -> JSON:
+    async def fetchLeaderBoard(self, gameName: str, level: int) -> dict[str, JSON] | list[JSON]:
         try:
             leaderboard: list[asyncpg.Record] = await self.fetchScoreLeaderboard[gameName].fetch(level)
             return [json.loads(replay["replay_json"]) for replay in leaderboard]

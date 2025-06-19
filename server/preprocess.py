@@ -8,18 +8,24 @@ class Response:
     message: str = ''
     body: Optional[dict[str, Any]] = None
 
-    def __init__(self, status: int = 200, message: str = 'Success. ', body: Optional[dict[str, Any]] = None):
+    def __init__(self, 
+            status: int = 200, 
+            message: str = 'Success. ', 
+            body: Optional[dict[str, Any]] = None
+        ):
         self.status = status
         self.message = message
         self.body = body
 
     def to_json_respond(self) -> web.Response:
+        response_body = {
+            'status': self.status,
+            'message': self.message,
+        }
+        if self.body:
+            response_body |= self.body
         return web.json_response(
-            {
-                'status': self.status,
-                'message': self.message,
-                'body': self.body
-            }, 
+            response_body, 
             status=self.status
         )
 
