@@ -3,12 +3,13 @@ import os
 from enum import StrEnum
 from typing import Optional, TypeAlias
 
-import aioargon2
 import asyncpg
 import asyncpg.prepared_stmt
-import replay
 from argon2 import exceptions as argon2Excepts
 from email_validator import EmailNotValidError, validate_email
+
+from . import aioargon2
+from . import replay
 
 JSON: TypeAlias = dict[str, "JSON"] | list["JSON"] | str | int | float | bool | None
 defaultGame = os.getenv('SCORE_DEFAULT_GAME', 'default_game')

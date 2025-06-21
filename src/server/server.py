@@ -4,8 +4,8 @@ from typing import Optional
 
 from aiohttp import web
 
-import preprocess
-from database import PostgresDB
+from . import preprocess
+from .database import PostgresDB
 
 database: Optional[PostgresDB] = None
 routes = web.RouteTableDef()
@@ -102,8 +102,3 @@ async def scoreLeaderBoard(game: str, level: str) -> preprocess.Response:
         }
     http_code = 200 if isinstance(result, list) else result.get("status", 200)
     return preprocess.Response(status=http_code, body=result)
-
-if __name__ == '__main__':
-    app = web.Application()
-    app.add_routes(routes)
-    web.run_app(app)

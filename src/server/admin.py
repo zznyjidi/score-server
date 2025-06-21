@@ -1,6 +1,6 @@
 import os
 
-from database import PostgresDB
+from .database import PostgresDB
 
 async def prepare():
     global db
