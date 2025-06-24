@@ -1,6 +1,6 @@
 import functools
 import json
-from typing import Any, Awaitable, Callable, Optional
+from typing import Any, Awaitable, Callable, Optional, Protocol
 from aiohttp import web
 
 class Response:
@@ -28,6 +28,10 @@ class Response:
             response_body, 
             status=self.status
         )
+
+class RequestProcessor(Protocol):
+    def __call__(self, request: web.Request, *args: Any, **kwds: Any) -> Awaitable[Response]:
+        ...
 
 async def extract_params(
         request: web.Request, *,
@@ -87,16 +91,16 @@ def request_to_params(
         body_param (Optional[list[str]], optional): list of parameters extracts from the json body. Defaults to None.
         url_match (Optional[list[str]], optional): list of parameters from the url variables. Defaults to None.
     """
-    def decorator(func: Callable[..., Awaitable[Response]]) -> Callable[[web.Request], Awaitable[web.Response]]:
+    def decorator(func: RequestProcessor) -> Callable[[web.Request], Awaitable[web.Response]]:
         @functools.wraps(func)
-        async def wrapper(request: web.Request):
+        async def wrapper(request: web.Request, *args, **kwargs) -> web.Response:
             params = await extract_params(
                 request, 
                 query_param=query_param, 
                 body_param=body_param, 
                 url_match=url_match
             )
-            result = await func(**params)
+            result = await func(request, *args, **kwargs, **params)
             return result.to_json_respond()
         return wrapper
     return decorator

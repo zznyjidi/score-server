@@ -35,7 +35,7 @@ async def userNew(username: str, nickname: str, email: str) -> preprocess.Respon
 
 @routes.post('/auth/client/login')
 @preprocess.request_to_params(body_param=['username', 'password'])
-async def clientLogin(username: str, password: str) -> preprocess.Response:
+async def clientLogin(request: web.Request, username: str, password: str) -> preprocess.Response:
     database = await initDBifNotAlready()
     uid, nickname = await database.authenticateUser(username, password)
     if (uid) > 0:
@@ -63,7 +63,7 @@ async def clientLogin(username: str, password: str) -> preprocess.Response:
 
 @routes.post('/client/{game}/score/submit')
 @preprocess.request_to_params(url_match=['game'], query_param=['uid'], body_param=['replay'])
-async def scoreSubmit(game: str, uid: str, replay: str) -> preprocess.Response:
+async def scoreSubmit(request: web.Request, game: str, uid: str, replay: str) -> preprocess.Response:
     database = await initDBifNotAlready()
     try:
         replay_json = json.loads(replay)
@@ -77,7 +77,7 @@ async def scoreSubmit(game: str, uid: str, replay: str) -> preprocess.Response:
 
 @routes.get('/client/{game}/score/get')
 @preprocess.request_to_params(url_match=['game'], query_param=['uid'])
-async def scoreGet(game: str, uid: str) -> preprocess.Response:
+async def scoreGet(request: web.Request, game: str, uid: str) -> preprocess.Response:
     database = await initDBifNotAlready()
     try:
         result = await database.fetchScore(game, int(uid))
@@ -91,7 +91,7 @@ async def scoreGet(game: str, uid: str) -> preprocess.Response:
 
 @routes.get('/client/{game}/score/leaderboard')
 @preprocess.request_to_params(url_match=['game'], query_param=['level'])
-async def scoreLeaderBoard(game: str, level: str) -> preprocess.Response:
+async def scoreLeaderBoard(request: web.Request, game: str, level: str) -> preprocess.Response:
     database = await initDBifNotAlready()
     try:
         result = await database.fetchLeaderBoard(game, int(level))
