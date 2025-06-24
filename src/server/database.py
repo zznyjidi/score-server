@@ -8,8 +8,7 @@ import asyncpg.prepared_stmt
 from argon2 import exceptions as argon2Excepts
 from email_validator import EmailNotValidError, validate_email
 
-from . import aioargon2
-from . import replay
+from . import aioargon2, replay
 
 JSON: TypeAlias = dict[str, "JSON"] | list["JSON"] | str | int | float | bool | None
 defaultGame = os.getenv('SCORE_DEFAULT_GAME', 'default_game')
@@ -38,6 +37,9 @@ class PostgresDB:
             await self.initTables()
             await self.createGame(defaultGame, defaultGameName)
             await self.initSearchQuery()
+
+    async def close(self):
+        await self.db.close()
 
     async def initSearchQuery(self):
         self.fetchUserByUid: asyncpg.prepared_stmt.PreparedStatement = await self.db.prepare('SELECT * FROM users WHERE uid = $1')

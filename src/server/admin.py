@@ -2,6 +2,7 @@ import os
 
 from .database import PostgresDB
 
+
 async def prepare():
     global db
     db = await PostgresDB(

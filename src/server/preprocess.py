@@ -1,7 +1,11 @@
 import functools
 import json
 from typing import Any, Awaitable, Callable, Optional, Protocol
+
 from aiohttp import web
+
+from .setup import postgres
+
 
 class Response:
     status: int = 200
@@ -104,3 +108,9 @@ def request_to_params(
             return result.to_json_respond()
         return wrapper
     return decorator
+
+def with_database(func: RequestProcessor) -> RequestProcessor:
+    @functools.wraps(func)
+    async def wrapper(request: web.Request, *args, **kwargs) -> Response:
+        return await func(request, *args, **kwargs, database=request.app[postgres])
+    return wrapper

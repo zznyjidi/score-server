@@ -1,5 +1,4 @@
 import json
-import os
 from typing import Optional
 
 from aiohttp import web
@@ -10,27 +9,21 @@ from .database import PostgresDB
 database: Optional[PostgresDB] = None
 routes = web.RouteTableDef()
 
-async def initDBifNotAlready():
-    global database
-    if not database:
-        database = await PostgresDB()
-    return database
-
 @routes.get('/')
 async def homePage(request: web.Request) -> web.Response:
     return web.Response(text="Score API Server")
 
 @routes.post('/auth/user/new')
 @preprocess.request_to_params(body_param=['username', 'nickname', 'email'])
-async def userNew(request: web.Request, username: str, nickname: str, email: str) -> preprocess.Response:
-    database = await initDBifNotAlready()
+@preprocess.with_database
+async def userNew(request: web.Request, database: PostgresDB, username: str, nickname: str, email: str) -> preprocess.Response:
     status = await database.createUser(username, nickname, email)
     return preprocess.Response(status=status['status'], body=status)
 
 @routes.post('/auth/client/login')
 @preprocess.request_to_params(body_param=['username', 'password'])
-async def clientLogin(request: web.Request, username: str, password: str) -> preprocess.Response:
-    database = await initDBifNotAlready()
+@preprocess.with_database
+async def clientLogin(request: web.Request, database: PostgresDB, username: str, password: str) -> preprocess.Response:
     uid, nickname = await database.authenticateUser(username, password)
     if (uid) > 0:
         status = {
@@ -57,8 +50,8 @@ async def clientLogin(request: web.Request, username: str, password: str) -> pre
 
 @routes.post('/client/{game}/score/submit')
 @preprocess.request_to_params(url_match=['game'], query_param=['uid'], body_param=['replay'])
-async def scoreSubmit(request: web.Request, game: str, uid: str, replay: str) -> preprocess.Response:
-    database = await initDBifNotAlready()
+@preprocess.with_database
+async def scoreSubmit(request: web.Request, database: PostgresDB, game: str, uid: str, replay: str) -> preprocess.Response:
     try:
         replay_json = json.loads(replay)
         status = await database.submitScore(game, int(uid), replay_json)
@@ -71,8 +64,8 @@ async def scoreSubmit(request: web.Request, game: str, uid: str, replay: str) ->
 
 @routes.get('/client/{game}/score/get')
 @preprocess.request_to_params(url_match=['game'], query_param=['uid'])
-async def scoreGet(request: web.Request, game: str, uid: str) -> preprocess.Response:
-    database = await initDBifNotAlready()
+@preprocess.with_database
+async def scoreGet(request: web.Request, database: PostgresDB, game: str, uid: str) -> preprocess.Response:
     try:
         result = await database.fetchScore(game, int(uid))
     except ValueError:
@@ -85,8 +78,8 @@ async def scoreGet(request: web.Request, game: str, uid: str) -> preprocess.Resp
 
 @routes.get('/client/{game}/score/leaderboard')
 @preprocess.request_to_params(url_match=['game'], query_param=['level'])
-async def scoreLeaderBoard(request: web.Request, game: str, level: str) -> preprocess.Response:
-    database = await initDBifNotAlready()
+@preprocess.with_database
+async def scoreLeaderBoard(request: web.Request, database: PostgresDB, game: str, level: str) -> preprocess.Response:
     try:
         result = await database.fetchLeaderBoard(game, int(level))
     except ValueError:
