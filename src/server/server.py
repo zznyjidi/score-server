@@ -1,12 +1,10 @@
 import json
-from typing import Optional
 
 from aiohttp import web
 
 from . import preprocess
 from .database import PostgresDB
 
-database: Optional[PostgresDB] = None
 routes = web.RouteTableDef()
 
 @routes.get('/')
