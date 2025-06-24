@@ -9,21 +9,22 @@ services:
         restart: true
     restart: unless-stopped
     environment:
-      - POSTGRES_HOST=db
-      - POSTGRES_USER=score-server
-      - POSTGRES_PASS=score-server
-      - POSTGRES_DB=scores
-      - SCORE_DEFAULT_GAME=default_game
-      - SCORE_DEFAULT_GAME_NAME=Default Game
+      - PGHOST=db
+      - PGDATABASE=${POSTGRES_DB}
+      - PGPORT=${POSTGRES_PORT}
+      - PGUSER=${POSTGRES_USER}
+      - PGPASSWORD=${POSTGRES_PASSWORD}
+      - SCORE_DEFAULT_GAME_ID=${SCORE_DEFAULT_GAME_ID}
+      - SCORE_DEFAULT_GAME_NAME=${SCORE_DEFAULT_GAME_NAME}
     ports:
       - 8080:8080
   db:
     image: postgres
     restart: unless-stopped
     environment:
-      - POSTGRES_USER=score-server
-      - POSTGRES_PASSWORD=score-server
-      - POSTGRES_DB=scores
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:

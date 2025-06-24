@@ -13,13 +13,7 @@ routes = web.RouteTableDef()
 async def initDBifNotAlready():
     global database
     if not database:
-        database = await PostgresDB(
-            host=os.getenv("POSTGRES_HOST", "127.0.0.1"), 
-            port=os.getenv("POSTGRES_PORT", 5432), 
-            user=os.getenv("POSTGRES_USER", "score-server"),
-            password=os.getenv("POSTGRES_PASS", "password"), 
-            database=os.getenv("POSTGRES_DB", "scores")
-        )
+        database = await PostgresDB()
     return database
 
 @routes.get('/')
@@ -28,7 +22,7 @@ async def homePage(request: web.Request) -> web.Response:
 
 @routes.post('/auth/user/new')
 @preprocess.request_to_params(body_param=['username', 'nickname', 'email'])
-async def userNew(username: str, nickname: str, email: str) -> preprocess.Response:
+async def userNew(request: web.Request, username: str, nickname: str, email: str) -> preprocess.Response:
     database = await initDBifNotAlready()
     status = await database.createUser(username, nickname, email)
     return preprocess.Response(status=status['status'], body=status)
