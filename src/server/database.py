@@ -11,7 +11,7 @@ from email_validator import EmailNotValidError, validate_email
 from . import aioargon2, replay
 
 JSON: TypeAlias = dict[str, "JSON"] | list["JSON"] | str | int | float | bool | None
-defaultGame = os.getenv('SCORE_DEFAULT_GAME', 'default_game')
+defaultGame = os.getenv('SCORE_DEFAULT_GAME_ID', 'default_game')
 defaultGameName = os.getenv('SCORE_DEFAULT_GAME_NAME', 'Default Game')
 
 class userStatus(StrEnum):
@@ -54,7 +54,7 @@ class PostgresDB:
             self.fetchScoreByGame[f"{game['name']}_json"] = await self.db.prepare(f'SELECT * FROM game_{game['name']} WHERE replay_json::jsonb @> $1::jsonb AND replay_json::jsonb <@ $1::jsonb')
             self.fetchScoreLeaderboard[game['name']] = await self.db.prepare(f'''
                 SELECT * FROM game_{game['name']}
-                WHERE CAST(replay_json -> 'info' ->> 'level_id' AS INTEGER) = $1
+                WHERE (replay_json -> 'info' ->> 'level_id')::integer = $1
                 ORDER BY (replay_json -> 'info' ->> 'time')::integer ASC LIMIT 50
             ''')
 

@@ -4,7 +4,7 @@ from typing import Any, Awaitable, Callable, Optional, Protocol
 
 from aiohttp import web
 
-from .setup import postgres, redis
+from .setup import postgres_key, redis_key
 
 
 class Response:
@@ -112,11 +112,11 @@ def request_to_params(
 def with_database(func: RequestProcessor) -> RequestProcessor:
     @functools.wraps(func)
     async def wrapper(request: web.Request, *args, **kwargs) -> Response:
-        return await func(request, *args, **kwargs, database=request.app[postgres])
+        return await func(request, *args, **kwargs, database=request.app[postgres_key])
     return wrapper
 
 def with_cache(func: RequestProcessor) -> RequestProcessor:
     @functools.wraps(func)
     async def wrapper(request: web.Request, *args, **kwargs) -> Response:
-        return await func(request, *args, **kwargs, cache=request.app[redis])
+        return await func(request, *args, **kwargs, cache=request.app[redis_key])
     return wrapper

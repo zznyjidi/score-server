@@ -4,15 +4,16 @@ import redis.asyncio as aioredis
 
 from .database import PostgresDB
 
-postgres = web.AppKey("postgres", PostgresDB)
-redis = web.AppKey("redis", aioredis.Redis)
+config_key = web.AppKey("config", dict[str, str | None])
+postgres_key = web.AppKey("postgres", PostgresDB)
+redis_key = web.AppKey("redis", aioredis.Redis)
 
 async def init_database(app: web.Application):
-    app[postgres] = await PostgresDB()
+    app[postgres_key] = await PostgresDB(dsn=app[config_key].get('postgres'))
     yield
-    await app[postgres].close()
+    await app[postgres_key].close()
 
 async def init_cache(app: web.Application):
-    app[redis] = await aioredis.Redis()
+    app[redis_key] = await aioredis.from_url(app[config_key].get('redis'))
     yield
-    await app[redis].aclose()
+    await app[redis_key].aclose()
