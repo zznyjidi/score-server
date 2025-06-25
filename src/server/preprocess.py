@@ -27,7 +27,10 @@ class Response:
             'message': self.message,
         }
         if self.body:
-            response_body |= self.body
+            if isinstance(self.body, dict):
+                response_body |= self.body
+            else:
+                response_body['payload'] = self.body
         return web.json_response(
             response_body, 
             status=self.status
@@ -66,7 +69,13 @@ async def extract_params(
             try:
                 params[param] = rel_url.query[param]
             except KeyError as e:
-                raise web.HTTPBadRequest() from e
+                raise web.HTTPBadRequest(
+                    content_type="application/json", 
+                    text=json.dumps({
+                        "status": 400,
+                        "message": f"Missing parameter: {str(e)}! "
+                    })
+                ) from e
 
     if body_param:
         try:
@@ -74,8 +83,22 @@ async def extract_params(
             for param in body_param:
                 value = body[param]
                 params[param] = value
-        except (KeyError, json.decoder.JSONDecodeError) as e:
-            raise web.HTTPBadRequest() from e
+        except KeyError as e:
+            raise web.HTTPBadRequest(
+                content_type="application/json",
+                text=json.dumps({
+                        "status": 400,
+                        "message": f"Missing payload: {str(e)}! "
+                })
+            ) from e
+        except json.decoder.JSONDecodeError as e:
+            raise web.HTTPBadRequest(
+                content_type="application/json",
+                text=json.dumps({
+                        "status": 400,
+                        "message": "Invalid request body! "
+                })
+            ) from e
 
     if url_match:
         for param in url_match:
