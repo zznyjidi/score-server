@@ -4,7 +4,7 @@ from typing import Any, Awaitable, Callable, Optional, Protocol
 
 from aiohttp import web
 
-from .setup import postgres
+from .setup import postgres, redis
 
 
 class Response:
@@ -113,4 +113,10 @@ def with_database(func: RequestProcessor) -> RequestProcessor:
     @functools.wraps(func)
     async def wrapper(request: web.Request, *args, **kwargs) -> Response:
         return await func(request, *args, **kwargs, database=request.app[postgres])
+    return wrapper
+
+def with_cache(func: RequestProcessor) -> RequestProcessor:
+    @functools.wraps(func)
+    async def wrapper(request: web.Request, *args, **kwargs) -> Response:
+        return await func(request, *args, **kwargs, cache=request.app[redis])
     return wrapper
