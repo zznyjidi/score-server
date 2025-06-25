@@ -7,6 +7,8 @@ services:
       db:
         condition: service_healthy
         restart: true
+      cache:
+        condition: service_healthy
     restart: unless-stopped
     environment:
       - PGHOST=db
@@ -14,12 +16,13 @@ services:
       - PGPORT=${POSTGRES_PORT}
       - PGUSER=${POSTGRES_USER}
       - PGPASSWORD=${POSTGRES_PASSWORD}
+      - REDIS_URL=${REDIS_URL}
       - SCORE_DEFAULT_GAME_ID=${SCORE_DEFAULT_GAME_ID}
       - SCORE_DEFAULT_GAME_NAME=${SCORE_DEFAULT_GAME_NAME}
     ports:
       - 8080:8080
   db:
-    image: postgres
+    image: postgres:17
     restart: unless-stopped
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
@@ -33,5 +36,17 @@ services:
       timeout: 5s
       retries: 5
 
+  cache:
+    image: valkey/valkey:8
+    restart: unless-stopped
+    volumes:
+      - cache_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "valkey-cli ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   db_data:
+  cache_data:
